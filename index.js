@@ -1,11 +1,18 @@
+// index.js
+
 const express = require('express');
 const app = express();
-const port = 0011;
 
+// Use environment variable or default to 0011
+const PORT = process.env.PORT || 0011;
+
+// Root endpoint
 app.get('/', (req, res) => {
-  res.send('Hello from my Node.js app!');
+  res.send('App deployed successfully via CI/CD on EC2!');
 });
 
-app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`);
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
+
