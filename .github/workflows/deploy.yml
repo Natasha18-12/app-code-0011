@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 env:
-  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/natasha-deploy-app
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/app-0011
 
 jobs:
   build-deploy:
@@ -58,9 +58,20 @@ jobs:
           echo "Starting deployment on EC2..."
           echo "Using image: $IMAGE_NAME:$TAG"
 
-          sudo docker stop natasha0018 || true
-          sudo docker rm natasha0018 || true
+          # Check if container exists and remove if it does
+          if sudo docker ps -a --format '{{.Names}}' | grep -Eq '^natasha0018$'; then
+            echo "Stopping and removing existing container natasha0018..."
+            sudo docker stop natasha0018 || true
+            sudo docker rm natasha0018 || true
+          fi
 
+          # Check if port 1985 is in use and kill the process
+          if sudo lsof -i :1985; then
+            echo "Port 1985 is in use. Killing process using it..."
+            sudo fuser -k 1985/tcp || true
+          fi
+
+          # Clean old images
           OLD_IMAGE=$(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep "$IMAGE_NAME" | grep -v "$TAG" || true)
           if [ -n "$OLD_IMAGE" ]; then
             echo "Removing old image(s):"
@@ -68,6 +79,7 @@ jobs:
             echo "$OLD_IMAGE" | xargs -r sudo docker rmi -f || true
           fi
 
+          # Pull and run latest image
           echo "Pulling new image..."
           sudo docker pull $IMAGE_NAME:$TAG
 
