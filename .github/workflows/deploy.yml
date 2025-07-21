@@ -24,35 +24,40 @@ jobs:
       run: npm install
 
     - name: Generate Unique Tag
-      id: tag
+      id: set_tag
       run: |
         echo "TAG=build-${{ github.run_number }}" >> $GITHUB_ENV
+        echo "TAG=build-${{ github.run_number }}" >> $GITHUB_OUTPUT
 
     - name: Build Docker Image
-      run: docker build -t $IMAGE_NAME:$TAG .
+      run: docker build -t $IMAGE_NAME:${{ env.TAG }} .
 
     - name: Login to DockerHub
       uses: docker/login-action@v3
       with:
-        registry: docker.io
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Push Docker Image
-      run: docker push $IMAGE_NAME:$TAG
+      run: docker push $IMAGE_NAME:${{ env.TAG }}
 
-    - name: Deploy to EC2
+    - name: Deploy to EC2 via SSH
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_KEY }}
         script: |
+          IMAGE_NAME="${{ env.IMAGE_NAME }}"
+          TAG="${{ env.TAG }}"
+
           sudo docker stop natasha18 || true
           sudo docker rm natasha18 || true
+
           OLD_IMAGE=$(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep "$IMAGE_NAME" | grep -v "$TAG" || true)
           if [ -n "$OLD_IMAGE" ]; then
             echo "$OLD_IMAGE" | xargs -r sudo docker rmi -f || true
           fi
+
           sudo docker pull $IMAGE_NAME:$TAG
           sudo docker run -d -p 1985:8080 --name natasha18 $IMAGE_NAME:$TAG
