@@ -27,7 +27,6 @@ jobs:
       id: tag
       run: |
         echo "TAG=build-${{ github.run_number }}" >> $GITHUB_ENV
-        echo "✅ Generated unique tag: build-${{ github.run_number }}"
 
     - name: Build Docker Image
       run: docker build -t $IMAGE_NAME:$TAG .
@@ -39,33 +38,22 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Push Docker Image with Unique Tag
+    - name: Push Docker Image
       run: docker push $IMAGE_NAME:$TAG
 
-    - name: Deploy to EC2 with Cleanup
+    - name: Deploy to EC2
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_KEY }}
         script: |
-          echo "🔑 Deploying $IMAGE_NAME:$TAG to EC2"
           export PATH=$PATH:/usr/bin
-          sudo docker --version || { echo "Docker not installed"; exit 1; }
-
-          echo "🧹 Cleaning up old container if exists..."
           sudo docker stop natasha18 || true
           sudo docker rm natasha18 || true
-
-          echo "🧼 Cleaning up old Docker images..."
           OLD_IMAGE=$(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep "$IMAGE_NAME" | grep -v "$TAG" || true)
           if [ -n "$OLD_IMAGE" ]; then
-            echo "Removing old image(s): $OLD_IMAGE"
             echo "$OLD_IMAGE" | xargs -r sudo docker rmi -f || true
           fi
-
-          echo "📥 Pulling new image..."
           sudo docker pull $IMAGE_NAME:$TAG
-
-          echo "🚀 Running container..."
           sudo docker run -d -p 1985:8080 --name natasha18 $IMAGE_NAME:$TAG
