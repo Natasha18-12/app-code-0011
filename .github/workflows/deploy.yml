@@ -47,6 +47,14 @@ jobs:
         key: ${{ secrets.EC2_KEY }}
         port: 22
         script: |
+          IMAGE_NAME="${{ env.IMAGE_NAME }}"
+          TAG="${{ env.TAG }}"
+
+          if [ -z "$IMAGE_NAME" ] || [ -z "$TAG" ]; then
+            echo "ERROR: IMAGE_NAME or TAG is not set."
+            exit 1
+          fi
+
           echo "Starting deployment on EC2..."
           echo "Using image: $IMAGE_NAME:$TAG"
 
@@ -55,7 +63,8 @@ jobs:
 
           OLD_IMAGE=$(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep "$IMAGE_NAME" | grep -v "$TAG" || true)
           if [ -n "$OLD_IMAGE" ]; then
-            echo "Removing old image: $OLD_IMAGE"
+            echo "Removing old image(s):"
+            echo "$OLD_IMAGE"
             echo "$OLD_IMAGE" | xargs -r sudo docker rmi -f || true
           fi
 
@@ -65,4 +74,4 @@ jobs:
           echo "Running new container..."
           sudo docker run -d -p 1985:8080 --name natasha18 $IMAGE_NAME:$TAG
 
-          echo "Deployment complete."
+          echo "✅ Deployment complete."
