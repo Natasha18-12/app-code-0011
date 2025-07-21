@@ -4,7 +4,7 @@ const express = require('express');
 const app = express();
 
 // Use environment variable or default to 0011
-const PORT = process.env.PORT || 0011;
+const PORT = 8080;
 
 // Root endpoint
 app.get('/', (req, res) => {
