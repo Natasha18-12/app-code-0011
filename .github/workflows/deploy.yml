@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 env:
-  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/app-0011
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/natasha-deploy-app
 
 jobs:
   build-deploy:
@@ -58,11 +58,9 @@ jobs:
           echo "Starting deployment on EC2..."
           echo "Using image: $IMAGE_NAME:$TAG"
 
-          # Stop and remove old container
           sudo docker stop natasha0018 || true
           sudo docker rm natasha0018 || true
 
-          # Remove older images
           OLD_IMAGE=$(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep "$IMAGE_NAME" | grep -v "$TAG" || true)
           if [ -n "$OLD_IMAGE" ]; then
             echo "Removing old image(s):"
@@ -70,7 +68,6 @@ jobs:
             echo "$OLD_IMAGE" | xargs -r sudo docker rmi -f || true
           fi
 
-          # Pull and run latest image
           echo "Pulling new image..."
           sudo docker pull $IMAGE_NAME:$TAG
 
