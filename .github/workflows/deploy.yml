@@ -58,8 +58,8 @@ jobs:
           echo "Starting deployment on EC2..."
           echo "Using image: $IMAGE_NAME:$TAG"
 
-          sudo docker stop natasha18 || true
-          sudo docker rm natasha18 || true
+          sudo docker stop natasha0018 || true
+          sudo docker rm natasha0018 || true
 
           OLD_IMAGE=$(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep "$IMAGE_NAME" | grep -v "$TAG" || true)
           if [ -n "$OLD_IMAGE" ]; then
@@ -72,6 +72,6 @@ jobs:
           sudo docker pull $IMAGE_NAME:$TAG
 
           echo "Running new container..."
-          sudo docker run -d -p 1985:8080 --name natasha18 $IMAGE_NAME:$TAG
+          sudo docker run -d -p 1985:8080 --name natasha0018 $IMAGE_NAME:$TAG
 
           echo "✅ Deployment complete."
